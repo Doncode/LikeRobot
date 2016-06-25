@@ -57,7 +57,7 @@ class LikeBaseController extends Controller
     }
 
 
-    public function unknownCommand($message)
+    public function unknownCommand(array $message)
     {
         $sendMessage = new SendMessage();
         $sendMessage->parse_mode = 'HTML';
@@ -71,7 +71,7 @@ class LikeBaseController extends Controller
     }
 
 
-    public function offCommand($message)
+    public function offCommand(array $message)
     {
         $this->user->is_notify = false;
         $sendMessage = new SendMessage();
@@ -86,7 +86,7 @@ class LikeBaseController extends Controller
     }
 
 
-    public function onCommand($message)
+    public function onCommand(array $message)
     {
         $this->user->is_notify = true;
         $sendMessage = new SendMessage();

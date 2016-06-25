@@ -20,11 +20,12 @@ use unreal4u\Telegram\Types\ReplyKeyboardMarkup;
 
 class LikeController extends LikeBaseController
 {
-    protected function route($data)
+    protected function route(array $data)
     {
         $routes = [
             ['text' => '/start', 'action' => 'startCommand'],
             ['match' => '|^/start |', 'action' => 'startCommand'],
+            ['text' => '/main', 'action' => 'mainCommand'],
             ['text' => StringsLike::BTN_POPULAR, 'action' => 'popularCommand'],
             ['text' => StringsLike::BTN_NEW, 'action' => 'newCommand'],
             ['text' => StringsLike::BTN_CREATE, 'action' => 'createCommand'],
@@ -117,7 +118,7 @@ class LikeController extends LikeBaseController
         return var_export($this->performApiRequest($setWeHook), 1);
     }
 
-    public function startCommand($message)
+    public function startCommand(array $message)
     {
         $sendMessage = new SendMessage();
         $sendMessage->parse_mode = 'HTML';
@@ -131,13 +132,75 @@ class LikeController extends LikeBaseController
         $this->performApiRequest($sendMessage);
     }
 
-    
-    public function helpCommand($message)
+    public function mainCommand(array $message)
     {
         $sendMessage = new SendMessage();
         $sendMessage->parse_mode = 'HTML';
         $sendMessage->chat_id = $message['from']['id'];
-        $sendMessage->text = "Тут будет описание и подсказка";
+        $sendMessage->text = "Главное меню: (/help - помощь)";
+        $sendMessage->reply_markup = new ReplyKeyboardMarkup();
+        $sendMessage->reply_markup->keyboard = $this->keyboard->setType(KeyboardsLike::MAIN)->genKeyboard();
+        $sendMessage->reply_markup->resize_keyboard = true;
+        $sendMessage->reply_markup->one_time_keyboard = false;
+
+        $this->performApiRequest($sendMessage);
+    }
+
+
+    public function helpCommand(array $message)
+    {
+        $sendMessage = new SendMessage();
+        $sendMessage->parse_mode = 'HTML';
+        $sendMessage->chat_id = $message['from']['id'];
+        $sendMessage->text = "Здесь ты можешь участвовать в конкурсе или объявить свой.\n\n";
+        $sendMessage->text .= "/main - главное меню\n";
+        $sendMessage->text .= "/help - помощь\n";
+        $sendMessage->text .= "/on - включить оповещения\n";
+        $sendMessage->text .= "/off - выключить оповещения\n";
+        $sendMessage->text .= "[Мы отправляем не больше 2 сообщений в день]\n";
+        $sendMessage->reply_markup = new ReplyKeyboardMarkup();
+        $sendMessage->reply_markup->keyboard = $this->keyboard->setType(KeyboardsLike::MAIN)->genKeyboard();
+        $sendMessage->reply_markup->resize_keyboard = true;
+        $sendMessage->reply_markup->one_time_keyboard = false;
+
+        $this->performApiRequest($sendMessage);
+    }
+
+
+    public function popularCommand(array $message)
+    {
+        $sendMessage = new SendMessage();
+        $sendMessage->parse_mode = 'HTML';
+        $sendMessage->chat_id = $message['from']['id'];
+        $sendMessage->text = "Здесь ты можешь участвовать в конкурсе или объявить свой. popularCommand";
+        $sendMessage->reply_markup = new ReplyKeyboardMarkup();
+        $sendMessage->reply_markup->keyboard = $this->keyboard->setType(KeyboardsLike::MAIN)->genKeyboard();
+        $sendMessage->reply_markup->resize_keyboard = true;
+        $sendMessage->reply_markup->one_time_keyboard = false;
+
+        $this->performApiRequest($sendMessage);
+    }
+
+    public function newCommand(array $message)
+    {
+        $sendMessage = new SendMessage();
+        $sendMessage->parse_mode = 'HTML';
+        $sendMessage->chat_id = $message['from']['id'];
+        $sendMessage->text = "Здесь ты можешь участвовать в конкурсе или объявить свой. newCommand";
+        $sendMessage->reply_markup = new ReplyKeyboardMarkup();
+        $sendMessage->reply_markup->keyboard = $this->keyboard->setType(KeyboardsLike::MAIN)->genKeyboard();
+        $sendMessage->reply_markup->resize_keyboard = true;
+        $sendMessage->reply_markup->one_time_keyboard = false;
+
+        $this->performApiRequest($sendMessage);
+    }
+
+    public function createCommand(array $message)
+    {
+        $sendMessage = new SendMessage();
+        $sendMessage->parse_mode = 'HTML';
+        $sendMessage->chat_id = $message['from']['id'];
+        $sendMessage->text = "Здесь ты можешь участвовать в конкурсе или объявить свой. createCommand";
         $sendMessage->reply_markup = new ReplyKeyboardMarkup();
         $sendMessage->reply_markup->keyboard = $this->keyboard->setType(KeyboardsLike::MAIN)->genKeyboard();
         $sendMessage->reply_markup->resize_keyboard = true;
