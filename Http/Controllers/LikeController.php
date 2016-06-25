@@ -15,8 +15,11 @@ use App\LikeUser;
 use App\StringsLike;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use unreal4u\Telegram\Methods\AnswerInlineQuery;
 use unreal4u\Telegram\Methods\SendMessage;
 use unreal4u\Telegram\Methods\SetWebhook;
+use unreal4u\Telegram\Types\InlineQueryResultArticle;
+use unreal4u\Telegram\Types\InlineQueryResultPhoto;
 use unreal4u\Telegram\Types\ReplyKeyboardMarkup;
 
 class LikeController extends LikeBaseController
@@ -30,6 +33,7 @@ class LikeController extends LikeBaseController
             ['text' => StringsLike::BTN_POPULAR, 'action' => 'popularCommand'],
             ['text' => StringsLike::BTN_NEW, 'action' => 'newCommand'],
             ['text' => StringsLike::BTN_CREATE, 'action' => 'createCommand'],
+            ['text' => '/create', 'action' => 'createCommand'],
             ['text' => '/help', 'action' => 'helpCommand'],
             ['text' => '/off', 'action' => 'offCommand'],
             ['text' => '/on', 'action' => 'onCommand'],
@@ -75,17 +79,17 @@ class LikeController extends LikeBaseController
                 FILE_APPEND
             );
 
-            if(array_key_exists('message', $data)){
+            if (array_key_exists('message', $data)) {
                 $this->queryType = 'message';
             }
-            if(array_key_exists('inline_query', $data)){
+            if (array_key_exists('inline_query', $data)) {
                 $this->queryType = 'inline_query';
             }
 
             if (!$this->queryType) {
                 exit('invalid');
             }
-            
+
 
             $userId = intval(array_get($data, "{$this->queryType}.from.id", 0));
             if (!$userId) {
@@ -103,7 +107,7 @@ class LikeController extends LikeBaseController
                 $this->user = LikeUser::findOrFail($userId);
             } catch (ModelNotFoundException $e) {
                 $this->isNew = true;
-                $userData =  array_get($data, "{$this->queryType}.from", []);
+                $userData = array_get($data, "{$this->queryType}.from", []);
                 $userData['score'] = self::BONUS_REG;
                 $this->user = LikeUser::create($userData);
             }
@@ -220,59 +224,78 @@ class LikeController extends LikeBaseController
         $sendMessage->reply_markup->keyboard = $this->keyboard->setType(KeyboardsLike::MAIN)->genKeyboard();
         $sendMessage->reply_markup->resize_keyboard = true;
         $sendMessage->reply_markup->one_time_keyboard = false;
-
-        $buttons = [];
         $id62 = Base62::convert($this->user->id, 10, 62);
-        foreach ([10, 50, 100, 500] as $amount) {
-            $buttons[] = ['text' => "{$amount}р", 'callback_data' => $id62];
-        }
-
-
+        $buttons = [];
+        $buttons[] = ['text' => "👍", 'callback_data' => '1'];
+        $buttons[] = ['text' => "👎", 'callback_data' => '-1'];
 
         $sendMessage->reply_markup = [
             'inline_keyboard' => [
                 $buttons,
-                [['text' => "Поделиться", 'switch_inline_query' => $id62]]
+                [['text' => "Поделиться", 'switch_inline_query' => '']] //$id62
             ],
         ];
+
 
         $this->performApiRequest($sendMessage);
     }
 
     public function inlineCommand(array $message)
     {
-
         file_put_contents(
             public_path().'/LikeLog'.date('Y-m-d').'.txt',
             'inlineCommand  '.PHP_EOL.PHP_EOL,
             FILE_APPEND
         );
 
-
-        $sendMessage = new SendMessage();
-        $sendMessage->parse_mode = 'HTML';
-        $sendMessage->chat_id = $message['from']['id'];
-        $sendMessage->text = "inlineCommand";
-        $sendMessage->reply_markup = new ReplyKeyboardMarkup();
-        $sendMessage->reply_markup->keyboard = $this->keyboard->setType(KeyboardsLike::MAIN)->genKeyboard();
-        $sendMessage->reply_markup->resize_keyboard = true;
-        $sendMessage->reply_markup->one_time_keyboard = false;
-
-        $buttons = [];
         $id62 = Base62::convert($this->user->id, 10, 62);
-        foreach ([10, 50, 100, 500] as $amount) {
-            $buttons[] = ['text' => "{$amount}р", 'callback_data' => $id62];
-        }
+        $buttons = [];
+        $buttons[] = ['text' => "👍", 'callback_data' => '1'];
+        $buttons[] = ['text' => "👎", 'callback_data' => '-1'];
+        $res1 = new InlineQueryResultPhoto();
+        $res1 = new InlineQueryResultArticle();
+        $res1->id = $message['id'];
+        $res1->title = 'Пожалуйста проголосуй';
+        $res1->description = 'Текст сообщения description';
+        $res1->caption = 'Пожалуйста проголосуй';
+        $res1->message_text = 'Здесь будет ФОТО участника';
+        $res1->parse_mode = 'HTML';
+        $res1->thumb_url = 'http://betbot.info/like.jpg';
+//        $res1->url = 'https://telegram.me/LikeFunRobot?start='.$this->user->id;
+//        $res1->hide_url = true;
+//        $res1->thumb_height = 288;
+//        $res1->thumb_width = 288;
 
-
-
-        $sendMessage->reply_markup = [
+        $res1->photo_url = 'http://betbot.info/like.jpg';
+        $res1->reply_markup = new ReplyKeyboardMarkup();
+        $res1->reply_markup->keyboard = $this->keyboard->setType(KeyboardsLike::MAIN)->genKeyboard();
+        $res1->reply_markup->resize_keyboard = true;
+        $res1->reply_markup->one_time_keyboard = false;
+        $res1->reply_markup = [
             'inline_keyboard' => [
                 $buttons,
-                [['text' => "Поделиться", 'switch_inline_query' => $id62]]
+                [['text' => "ПОДЕЛИТЬСЯ", 'switch_inline_query' => ' ']],
+                [
+                    [
+                        'text' => "ЕЩЕ ГОЛОСОВАНИЯ",
+                        'url' => "https://telegram.me/LikeFunRobot?start={$this->user->id}",
+                    ],
+                ],
+                [
+                    [
+                        'text' => "ЕЩЕ УЧАСТНИКИ",
+                        'url' => "https://telegram.me/LikeFunRobot?start={$this->user->id}",
+                    ],
+                ],
             ],
         ];
 
-        $this->performApiRequest($sendMessage);
+        $res1->input_message_content = [
+            'message_text' => 'Тест сообщения input_message_content',
+        ];
+        $answerInlineQuery = new AnswerInlineQuery();
+        $answerInlineQuery->inline_query_id = $message['id'];
+        $answerInlineQuery->results = [$res1];
+        $this->performApiRequest($answerInlineQuery);
     }
 }
