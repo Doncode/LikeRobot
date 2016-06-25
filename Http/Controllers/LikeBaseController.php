@@ -9,25 +9,64 @@
 namespace App\Http\Controllers;
 
 
-use App\User;
-use Elasticsearch\ClientBuilder;
-use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
+use App\Botan;
+use App\KeyboardsLike;
+use App\LikeUser;
 use unreal4u\Telegram\Methods\SendMessage;
-use unreal4u\Telegram\Methods\SetWebhook;
+use unreal4u\Telegram\Types\ReplyKeyboardMarkup;
 use unreal4u\TgLog;
 
 class LikeBaseController extends Controller
 {
-    private $tgLog;
+    /**
+     * @var LikeUser
+     */
+    protected $user;
+
+    /**
+     * @var Botan
+     */
+    protected $botan;
+
+    /**
+     * @var KeyboardsLike
+     */
+    protected $keyboard;
+
+    /**
+     * @var TgLog
+     */
+    protected $tgLog;
+
+    const BONUS_REG = 5;
+
+    public function __construct()
+    {
+        //todo config
+        $this->tgLog = new TgLog('228041087:AAFfxvhRV-c9Zosy7cG3BNChNcfAPOMiOMk');
+        $this->botan = new Botan('1sRWBS8-J2jBcQqIpSEph6:GeYP8bLW2');
+
+        //todo translate
+        $this->keyboard = new KeyboardsLike();
+    }
 
 
     public function performApiRequest($sendMessage)
     {
-        if (is_null($this->tgLog)) {
-            $this->tgLog = new TgLog('228041087:AAFfxvhRV-c9Zosy7cG3BNChNcfAPOMiOMk');
-        }
-
         return $this->tgLog->performApiRequest($sendMessage);
+    }
+
+
+    public function unknownCommand($message)
+    {
+        $sendMessage = new SendMessage();
+        $sendMessage->parse_mode = 'HTML';
+        $sendMessage->chat_id = $message['from']['id'];
+        $sendMessage->text = 'Неизвестная команда. '.PHP_EOL; //todo translate
+        $sendMessage->reply_markup = new ReplyKeyboardMarkup();
+        $sendMessage->reply_markup->keyboard = $this->keyboard->setType(KeyboardsLike::MAIN)->genKeyboard();
+        $sendMessage->reply_markup->resize_keyboard = true;
+        $sendMessage->reply_markup->one_time_keyboard = false;
+        $this->performApiRequest($sendMessage);
     }
 }

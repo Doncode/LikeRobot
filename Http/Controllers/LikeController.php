@@ -9,9 +9,7 @@
 namespace App\Http\Controllers;
 
 
-use App\Botan;
 use App\KeyboardsLike;
-use App\LikeKeyboards;
 use App\LikeUser;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -21,26 +19,6 @@ use unreal4u\Telegram\Types\ReplyKeyboardMarkup;
 
 class LikeController extends LikeBaseController
 {
-    /**
-     * @var LikeUser
-     */
-    protected $user;
-
-    /**
-     * @var Botan
-     */
-    protected $botan;
-
-    /**
-     * @var KeyboardsLike
-     */
-    protected $keyboard;
-
-    private $tgLog;
-
-    const BONUS_REG = 5;
-
-
     protected function route($data)
     {
         $routes = [
@@ -103,8 +81,6 @@ class LikeController extends LikeBaseController
                 FILE_APPEND
             );
 
-            $this->botan = new Botan('1sRWBS8-J2jBcQqIpSEph6:GeYP8bLW2');
-            $this->getKeyboards();
             $userId = intval(array_get($data, 'message.from.id', 0));
             if (!$userId) {
                 exit('invalid user id');
@@ -150,7 +126,6 @@ class LikeController extends LikeBaseController
         $setWeHook->url = 'https://laravel.32x.com.ua/like/hook';
 
         return var_export($this->performApiRequest($setWeHook), 1);
-
     }
 
     public function startCommand($message)
@@ -165,14 +140,5 @@ class LikeController extends LikeBaseController
         $sendMessage->reply_markup->one_time_keyboard = false;
 
         $this->performApiRequest($sendMessage);
-    }
-
-    private function getKeyboards()
-    {
-        if (is_null($this->keyboard)) {
-            $this->keyboard = new KeyboardsLike();
-        }
-
-        return $this->keyboard;
     }
 }
