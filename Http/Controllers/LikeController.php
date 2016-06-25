@@ -11,6 +11,7 @@ namespace App\Http\Controllers;
 
 use App\KeyboardsLike;
 use App\LikeUser;
+use App\StringsLike;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use unreal4u\Telegram\Methods\SendMessage;
@@ -22,26 +23,14 @@ class LikeController extends LikeBaseController
     protected function route($data)
     {
         $routes = [
-            [
-                'action' => 'groupCommand',
-                'func' => function ($message) {
-                    $chatId = array_get($message, 'chat.id', '');
-                    $fromId = array_get($message, 'from.id', '');
-
-                    return $chatId != $fromId;
-                },
-            ],
             ['text' => '/start', 'action' => 'startCommand'],
-            ['text' => '/invite', 'action' => 'inviteCommand'],
+            ['match' => '|^/start |', 'action' => 'startCommand'],
+            ['text' => StringsLike::BTN_POPULAR, 'action' => 'popularCommand'],
+            ['text' => StringsLike::BTN_NEW, 'action' => 'newCommand'],
+            ['text' => StringsLike::BTN_CREATE, 'action' => 'createCommand'],
             ['text' => '/help', 'action' => 'helpCommand'],
             ['text' => '/off', 'action' => 'offCommand'],
             ['text' => '/on', 'action' => 'onCommand'],
-            ['text' => '/settings', 'action' => 'settingsCommand'],
-            ['match' => '|^/ev(\d+)$|', 'action' => 'newBetCommand'],
-            ['match' => '|^/bet(\d+)$|', 'action' => 'acceptBetCommand'],
-            ['match' => '|^/start |', 'action' => 'startCommand'],
-
-
         ];
 
         $text = strtolower(trim(array_get($data, 'message.text', '')));
@@ -134,6 +123,21 @@ class LikeController extends LikeBaseController
         $sendMessage->parse_mode = 'HTML';
         $sendMessage->chat_id = $message['from']['id'];
         $sendMessage->text = "Привет!\nЗдесь ты можешь участвовать в конкурсе или объявить свой.";
+        $sendMessage->reply_markup = new ReplyKeyboardMarkup();
+        $sendMessage->reply_markup->keyboard = $this->keyboard->setType(KeyboardsLike::MAIN)->genKeyboard();
+        $sendMessage->reply_markup->resize_keyboard = true;
+        $sendMessage->reply_markup->one_time_keyboard = false;
+
+        $this->performApiRequest($sendMessage);
+    }
+
+    
+    public function helpCommand($message)
+    {
+        $sendMessage = new SendMessage();
+        $sendMessage->parse_mode = 'HTML';
+        $sendMessage->chat_id = $message['from']['id'];
+        $sendMessage->text = "Тут будет описание и подсказка";
         $sendMessage->reply_markup = new ReplyKeyboardMarkup();
         $sendMessage->reply_markup->keyboard = $this->keyboard->setType(KeyboardsLike::MAIN)->genKeyboard();
         $sendMessage->reply_markup->resize_keyboard = true;

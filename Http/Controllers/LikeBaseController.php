@@ -69,4 +69,35 @@ class LikeBaseController extends Controller
         $sendMessage->reply_markup->one_time_keyboard = false;
         $this->performApiRequest($sendMessage);
     }
+
+
+    public function offCommand($message)
+    {
+        $this->user->is_notify = false;
+        $sendMessage = new SendMessage();
+        $sendMessage->parse_mode = 'HTML';
+        $sendMessage->chat_id = $message['from']['id'];
+        $sendMessage->text = "Оповещения отключены.\n/on - включить\n(Мы отправляем не больше 2 сообщений в день)";
+        $sendMessage->reply_markup = new ReplyKeyboardMarkup();
+        $sendMessage->reply_markup->keyboard = $this->keyboard->setType(KeyboardsLike::MAIN)->genKeyboard();
+        $sendMessage->reply_markup->resize_keyboard = true;
+        $sendMessage->reply_markup->one_time_keyboard = false;
+        $this->performApiRequest($sendMessage);
+    }
+
+
+    public function onCommand($message)
+    {
+        $this->user->is_notify = true;
+        $sendMessage = new SendMessage();
+        $sendMessage->parse_mode = 'HTML';
+        $sendMessage->chat_id = $message['from']['id'];
+        $sendMessage->text = "Оповещения включены.\n/off - отключить\n(Мы отправляем не больше 2 сообщений в день)";
+        $sendMessage->reply_markup = new ReplyKeyboardMarkup();
+        $sendMessage->reply_markup->keyboard = $this->keyboard->setType(KeyboardsLike::MAIN)->genKeyboard();
+        $sendMessage->reply_markup->resize_keyboard = true;
+        $sendMessage->reply_markup->one_time_keyboard = false;
+        $this->performApiRequest($sendMessage);
+    }
+
 }
