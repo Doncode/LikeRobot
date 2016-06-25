@@ -9,6 +9,7 @@
 namespace App\Http\Controllers;
 
 
+use App\helpers\Base62;
 use App\KeyboardsLike;
 use App\LikeUser;
 use App\StringsLike;
@@ -32,21 +33,24 @@ class LikeController extends LikeBaseController
             ['text' => '/help', 'action' => 'helpCommand'],
             ['text' => '/off', 'action' => 'offCommand'],
             ['text' => '/on', 'action' => 'onCommand'],
+            ['inline_query' => true, 'action' => 'inlineCommand'],
         ];
 
         $text = strtolower(trim(array_get($data, 'message.text', '')));
         $state = $this->user->state;
         $action = 'unknownCommand';
-        $params = [$data['message']];
+        $params = [$data[$this->queryType]];
+
         foreach ($routes as $r) {
             if (
                 (!array_key_exists('state', $r) || $r['state'] == $state) &&
+                (!array_key_exists('inline_query', $r) || $this->queryType == 'inline_query') &&
                 (!array_key_exists('text', $r) || $r['text'] == $text) &&
                 (!array_key_exists('match', $r) || preg_match($r['match'], $text, $match)) &&
                 (!array_key_exists('in', $r) || in_array($text, $r['in'])) &&
-                (!array_key_exists('func', $r) || $r['func']($data['message']))
+                (!array_key_exists('func', $r) || $r['func']($data[$this->queryType]))
             ) {
-                $this->botan->track($data['message'], $r['action']);
+                $this->botan->track($data[$this->queryType], $r['action']);
                 $action = $r['action'];
                 if (isset($match)) {
                     $params[] = $match;
@@ -71,15 +75,27 @@ class LikeController extends LikeBaseController
                 FILE_APPEND
             );
 
-            $userId = intval(array_get($data, 'message.from.id', 0));
+            if(array_key_exists('message', $data)){
+                $this->queryType = 'message';
+            }
+            if(array_key_exists('inline_query', $data)){
+                $this->queryType = 'inline_query';
+            }
+
+            if (!$this->queryType) {
+                exit('invalid');
+            }
+            
+
+            $userId = intval(array_get($data, "{$this->queryType}.from.id", 0));
             if (!$userId) {
                 exit('invalid user id');
             }
 
-            $first_name = array_get($data, 'message.from.first_name', '');
-            $last_name = array_get($data, 'message.from.last_name', '');
-            $username = array_get($data, 'message.from.username', '');
-            $text = array_get($data, 'message.text', '');
+            $first_name = array_get($data, "{$this->queryType}.from.first_name", '');
+            $last_name = array_get($data, "{$this->queryType}.from.last_name", '');
+            $username = array_get($data, "{$this->queryType}.from.username", '');
+            $text = array_get($data, "{$this->queryType}.text", '');
             $live = date("Y-m-d H:i:s")." id:{$userId} ({$username} {$first_name} {$last_name}) $text ".PHP_EOL;
             file_put_contents(public_path().'/LikeLive.txt', $live, FILE_APPEND);
 
@@ -87,7 +103,7 @@ class LikeController extends LikeBaseController
                 $this->user = LikeUser::findOrFail($userId);
             } catch (ModelNotFoundException $e) {
                 $this->isNew = true;
-                $userData = $data['message']['from'];
+                $userData =  array_get($data, "{$this->queryType}.from", []);
                 $userData['score'] = self::BONUS_REG;
                 $this->user = LikeUser::create($userData);
             }
@@ -166,7 +182,6 @@ class LikeController extends LikeBaseController
         $this->performApiRequest($sendMessage);
     }
 
-
     public function popularCommand(array $message)
     {
         $sendMessage = new SendMessage();
@@ -205,6 +220,58 @@ class LikeController extends LikeBaseController
         $sendMessage->reply_markup->keyboard = $this->keyboard->setType(KeyboardsLike::MAIN)->genKeyboard();
         $sendMessage->reply_markup->resize_keyboard = true;
         $sendMessage->reply_markup->one_time_keyboard = false;
+
+        $buttons = [];
+        $id62 = Base62::convert($this->user->id, 10, 62);
+        foreach ([10, 50, 100, 500] as $amount) {
+            $buttons[] = ['text' => "{$amount}р", 'callback_data' => $id62];
+        }
+
+
+
+        $sendMessage->reply_markup = [
+            'inline_keyboard' => [
+                $buttons,
+                [['text' => "Поделиться", 'switch_inline_query' => $id62]]
+            ],
+        ];
+
+        $this->performApiRequest($sendMessage);
+    }
+
+    public function inlineCommand(array $message)
+    {
+
+        file_put_contents(
+            public_path().'/LikeLog'.date('Y-m-d').'.txt',
+            'inlineCommand  '.PHP_EOL.PHP_EOL,
+            FILE_APPEND
+        );
+
+
+        $sendMessage = new SendMessage();
+        $sendMessage->parse_mode = 'HTML';
+        $sendMessage->chat_id = $message['from']['id'];
+        $sendMessage->text = "inlineCommand";
+        $sendMessage->reply_markup = new ReplyKeyboardMarkup();
+        $sendMessage->reply_markup->keyboard = $this->keyboard->setType(KeyboardsLike::MAIN)->genKeyboard();
+        $sendMessage->reply_markup->resize_keyboard = true;
+        $sendMessage->reply_markup->one_time_keyboard = false;
+
+        $buttons = [];
+        $id62 = Base62::convert($this->user->id, 10, 62);
+        foreach ([10, 50, 100, 500] as $amount) {
+            $buttons[] = ['text' => "{$amount}р", 'callback_data' => $id62];
+        }
+
+
+
+        $sendMessage->reply_markup = [
+            'inline_keyboard' => [
+                $buttons,
+                [['text' => "Поделиться", 'switch_inline_query' => $id62]]
+            ],
+        ];
 
         $this->performApiRequest($sendMessage);
     }

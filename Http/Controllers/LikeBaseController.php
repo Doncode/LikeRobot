@@ -38,6 +38,11 @@ class LikeBaseController extends Controller
      */
     protected $tgLog;
 
+    /**
+     * @var string|null
+     */
+    protected $queryType;
+
     const BONUS_REG = 5;
 
     public function __construct()
